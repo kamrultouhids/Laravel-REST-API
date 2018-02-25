@@ -127,32 +127,31 @@ class ApiUserController extends Controller
     public function destroy($id)
     {
         try{
+
             $user = User::FindOrFail($id);
             $user->delete();
-            $bug = 0;
-        }
-        catch(\Exception $e){
-            $bug = $e->errorInfo[1];
-        }
 
-        if( $bug == 0 ){
             return response()->json([
                 'code'      => 200,
                 'response'  => 'User delete successfully.',
                 'data'      => []
             ]);
-        }elseif ($bug == 1451 ) {
-            return response()->json([
-                'code'      => 404,
-                'response'  => 'error',
-                'errors'    => ['massage' => 'Cannot delete a parent data,this data is used anywhere.']
-            ]);
-        } else {
-            return response()->json([
-                'code'      => 404,
-                'response'  => 'error',
-                'errors'    => ['massage' => 'User not deleted,something error found.']
-            ]);
+        }
+        catch(\Exception $e){
+            $bug = $e->errorInfo[1];
+            if ($bug == 1451 ) {
+                return response()->json([
+                    'code'      => 404,
+                    'response'  => 'error',
+                    'errors'    => ['massage' => 'Cannot delete a parent data,this data is used anywhere.']
+                ]);
+            } else {
+                return response()->json([
+                    'code'      => 404,
+                    'response'  => 'error',
+                    'errors'    => ['massage' => 'User not deleted,something error found.']
+                ]);
+            }
         }
     }
 
