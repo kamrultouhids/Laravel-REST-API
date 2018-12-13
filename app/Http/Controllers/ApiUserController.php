@@ -36,6 +36,7 @@ class ApiUserController extends Controller
 
     public function store(Request $request)
     {
+//        dd(JWTAuth::getToken(),$request->header('authorization'),$request->all());
         $validator = Validator::make($request->all(), [
             'name'                  => 'required',
             'email'                 => 'required|unique:users,email',

@@ -7,7 +7,7 @@ use Closure;
 use JWTAuth;
 
 use Tymon\JWTAuth\Exceptions\JWTException;
-
+use Tymon\JWTAuth\Exceptions\TokenExpiredException;
 
 
 class VerifyJWTToken
@@ -21,17 +21,33 @@ class VerifyJWTToken
      */
     public function handle($request, Closure $next)
     {
+
         try{
-            $user = JWTAuth::toUser($request->input('token'));
-        }catch (JWTException $e) {
-            if($e instanceof \Tymon\JWTAuth\Exceptions\TokenExpiredException) {
-                return response()->json(['Authentication Expired'], $e->getStatusCode());
-            }else if ($e instanceof \Tymon\JWTAuth\Exceptions\TokenInvalidException) {
-                return response()->json(['Invalid Authentication'], $e->getStatusCode());
+            $token = JWTAuth::getToken();
+            if ($token) {
+                if (! $user = JWTAuth::parseToken()->authenticate() ) {
+                    return response()->json(['user_not_found'], 200);
+                }
             }else{
-                return response()->json(['error'=>'Authentication is required']);
+                return response()->json([ 'error' => 'token not provided', ]);
             }
+        } catch (TokenExpiredException $e) {
+            // If the token is expired, then it will be refreshed and added to the headers
+            try {
+                $refreshed = JWTAuth::refresh(JWTAuth::getToken());
+                $user = JWTAuth::setToken($refreshed)->toUser();
+                header('Authorization: Bearer ' . $refreshed);
+            } catch (JWTException $e) {
+                return response()->json(['status' => 'error', 'msg' => 'something went wrong', ]);
+            }catch (TokenInvalidException $e) {
+                return response()->json(['status' => 'error', 'msg' => 'token invalid', ]);
+            }
+        }catch (JWTException $e) {
+            return response()->json(['status' => 'error', 'msg' => 'something went wrong', ]);
+        }catch (TokenInvalidException $e) {
+            return response()->json(['status' => 'error', 'msg' => 'token invalid', ]);
         }
+
 
         return $next($request);
     }
